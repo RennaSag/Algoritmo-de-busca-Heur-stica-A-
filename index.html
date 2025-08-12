@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mundo da Barbie - Busca A*</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 Mundo da Barbie - Algoritmo A* 🌟</h1>
+        
+        <div class="controls">
+            <button onclick="game.initializeGame()">🎮 Inicializar Jogo</button>
+            <button onclick="game.startSearch()" id="startBtn" disabled>🚀 Iniciar Busca</button>
+            <button onclick="game.resetGame()">🔄 Resetar</button>
+            <button onclick="game.toggleSpeed()">⚡ Velocidade: <span id="speedText">Normal</span></button>
+            <button onclick="mapEditor.openMapEditor()">🗺️ Editor de Mapa</button>
+            <button onclick="game.loadPresetMap()">📁 Carregar Mapa Pré-definido</button>
+        </div>
+
+        <!-- Modal do Editor de Mapa -->
+        <div id="mapEditorModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; max-width: 90%; max-height: 90%; overflow: auto;">
+                <h3>Editor de Mapa</h3>
+                <div style="margin-bottom: 15px;">
+                    <label>Selecione o terreno:</label>
+                    <select id="terrainSelector">
+                        <option value="grama">Grama (5 min)</option>
+                        <option value="asfalto">Asfalto (1 min)</option>
+                        <option value="terra">Terra (3 min)</option>
+                        <option value="paralelepipedo">Paralelepípedo (10 min)</option>
+                        <option value="edificio">Edifício (∞)</option>
+                    </select>
+                </div>
+                <p><strong>Instruções:</strong> Clique nas células do mapa abaixo para pintar com o terreno selecionado.</p>
+                <div id="editorMap" style="border: 2px solid #333; display: inline-block; margin: 10px 0;"></div>
+                <div style="margin-top: 15px;">
+                    <button onclick="mapEditor.saveMapConfig()">💾 Salvar Configuração</button>
+                    <button onclick="mapEditor.loadMapConfig()">📂 Carregar Configuração</button>
+                    <button onclick="mapEditor.exportMapConfig()">📤 Exportar Mapa</button>
+                    <button onclick="mapEditor.closeMapEditor()">❌ Fechar</button>
+                </div>
+                <textarea id="mapConfigText" placeholder="Cole aqui a configuração do mapa para importar..." style="width: 100%; height: 100px; margin-top: 10px;"></textarea>
+                <button onclick="mapEditor.importMapConfig()" style="margin-top: 10px;">📥 Importar do Texto</button>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <div class="stats">
+                <div class="stat-box">
+                    <h3>Posição Atual</h3>
+                    <div id="currentPosition">[23, 19]</div>
+                </div>
+                <div class="stat-box">
+                    <h3>Custo Atual</h3>
+                    <div id="currentCost">0</div>
+                </div>
+                <div class="stat-box">
+                    <h3>Pessoas Convencidas</h3>
+                    <div id="convincedCount">0/3</div>
+                </div>
+                <div class="stat-box">
+                    <h3>Status</h3>
+                    <div id="gameStatus">Aguardando inicialização</div>
+                </div>
+            </div>
+
+            <div class="friends-status" id="friendsStatus">
+                <!-- Status dos amigos será inserido aqui -->
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color asfalto"></div>
+                    <span>Asfalto (1 min)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color terra"></div>
+                    <span>Terra (3 min)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color grama"></div>
+                    <span>Grama (5 min)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color paralelepipedo"></div>
+                    <span>Paralelepípedo (10 min)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color edificio"></div>
+                    <span>Edifício (∞)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color barbie"></div>
+                    <span>Barbie</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color friend"></div>
+                    <span>Amigos</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color path"></div>
+                    <span>Caminho</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div class="map-wrapper">
+                <h3 style="text-align: center; margin-bottom: 15px; margin-top: 0;">Mapa do Mundo da Barbie (42x42)</h3>
+                
+                <!-- Coordenadas superiores (colunas) -->
+                <div class="coordinates coord-top" id="topCoords"></div>
+                
+                <!-- Coordenadas esquerdas (linhas) -->
+                <div class="coordinates coord-left" id="leftCoords"></div>
+                
+                <div id="map" class="map"></div>
+            </div>
+            
+            <div class="info-panel" style="max-width: 800px;">
+                <h4>Instruções de Visualização</h4>
+                <p><strong>Passe o mouse sobre qualquer célula</strong> para ver suas coordenadas [linha, coluna] e tipo de terreno.</p>
+                <p><strong>Observe as animações:</strong> Barbie pulsa em rosa, amigos brilham em dourado, caminho percorrido fica azul.</p>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <h3>Log de Atividades</h3>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script src="Config.js"></script>
+    <script src="GameState.js"></script>
+    <script src="MapGenerator.js"></script>
+    <script src="AStar.js"></script>
+    <script src="MapEditor.js"></script>
+    <script src="UIManager.js"></script>
+    <script src="Game.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
