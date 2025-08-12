@@ -11,7 +11,6 @@ class UIManager {
             const showNumber = (j % 5 === 0) || (j === Config.GRID_SIZE - 1);
             topHTML += `<div class="coord-number">${showNumber ? j : ''}</div>`;
         }
-        //topCoords.innerHTML = topHTML; tirar essa parte pra não mostrar legenda
         
         // Coordenadas esquerdas (linhas)
         const leftCoords = document.getElementById('leftCoords');
@@ -20,7 +19,6 @@ class UIManager {
             const showNumber = (i % 5 === 0) || (i === Config.GRID_SIZE - 1);
             leftHTML += `<div class="coord-number-left">${showNumber ? i : ''}</div>`;
         }
-        //leftCoords.innerHTML = leftHTML; tirar essa parte pra não mostrar legenda
     }
 
     updateDisplay() {
@@ -32,6 +30,7 @@ class UIManager {
                 let className = this.gameState.map[i][j];
                 let cellContent = '';
                 let dataAttributes = '';
+                let extraStyles = '';
                 
                 // Verificar se foi visitada (mostrar rastro)
                 if (this.gameState.isVisited([i, j])) {
@@ -60,13 +59,24 @@ class UIManager {
                             cellContent = friend.name[0]; // Primeira letra do nome
                         }
                     }
+                    // Se não há amigo nem Barbie, mostrar ícone do terreno
+                    else {
+                        cellContent = this.getTerrainIcon(this.gameState.map[i][j]);
+                    }
+                }
+                
+                // Posição inicial (casa)
+                if (i === Config.START_POS[0] && j === Config.START_POS[1] && 
+                    !(i === this.gameState.barbiePos[0] && j === this.gameState.barbiePos[1])) {
+                    cellContent = '🏠';
+                    extraStyles = 'background-color: #FFB6C1 !important;';
                 }
                 
                 const terrainName = this.gameState.map[i][j];
                 const cost = Config.TERRAIN_COSTS[terrainName];
                 const costText = cost === Infinity ? '∞' : cost;
                 
-                html += `<div class="cell ${className}" ${dataAttributes}>
+                html += `<div class="cell ${className}" ${dataAttributes} style="${extraStyles}">
                     ${cellContent}
                     <div class="cell-info">[${i},${j}] - ${terrainName} (${costText}min)</div>
                 </div>`;
@@ -78,6 +88,18 @@ class UIManager {
         
         // Atualizar estatísticas
         this.updateStats();
+    }
+
+    // Adicionar ícones visuais para cada tipo de terreno
+    getTerrainIcon(terrain) {
+        const icons = {
+            'asfalto': '🛣️',
+            'grama': '🌱',
+            'terra': '🟤',
+            'paralelepipedo': '🧱',
+            'edificio': '🏢'
+        };
+        return icons[terrain] || '';
     }
 
     updateStats() {
@@ -93,6 +115,7 @@ class UIManager {
         for (const friend of this.gameState.friends) {
             let status = '';
             let className = '';
+            let willAccept = this.gameState.willFriendAccept(friend.name) ? '💖' : '💔';
             
             if (this.gameState.isFriendConvinced(friend.name)) {
                 status = '✅ Convencido';
@@ -101,7 +124,7 @@ class UIManager {
                 status = '❌ Recusou';
                 className = 'rejected';
             } else {
-                status = '⏳ Não visitado';
+                status = `⏳ Não visitado ${willAccept}`;
                 className = '';
             }
             

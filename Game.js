@@ -37,11 +37,12 @@ class Game {
         
         this.gameState.isRunning = true;
         this.uiManager.disableStartButton();
-        this.uiManager.setGameStatus('Executando busca A*');
+        this.uiManager.setGameStatus('Executando busca A* otimizada');
         
-        this.uiManager.log('🚀 Iniciando busca A*...');
+        this.uiManager.log('🚀 Iniciando busca A* inteligente...');
+        this.uiManager.log('🧠 Calculando rota ótima para visitar todos os amigos...');
         
-        await this.executeAStarSearch();
+        await this.executeOptimizedAStarSearch();
     }
 
     resetGame() {
@@ -63,112 +64,212 @@ class Game {
         this.uiManager.updateSpeedText(speedName);
     }
 
-    async executeAStarSearch() {
-        let totalCost = 0;
+    // Nova implementação com A* otimizado
+    async executeOptimizedAStarSearch() {
+        // Primeiro, encontrar a melhor rota usando A* para visitar todos os amigos
+        const optimalRoute = this.findOptimalRoute();
         
-        while (this.gameState.convincedFriends.length < 3 && this.gameState.isRunning) {
-            // Encontrar o próximo amigo mais próximo não visitado
-            const availableFriends = this.gameState.getAvailableFriends();
+        if (!optimalRoute) {
+            this.uiManager.log('❌ Não foi possível encontrar uma rota válida!');
+            this.gameState.isRunning = false;
+            this.uiManager.enableStartButton();
+            return;
+        }
+
+        this.uiManager.log(`🎯 Rota ótima encontrada! Custo estimado: ${optimalRoute.totalCost} minutos`);
+        this.uiManager.log(`📋 Ordem de visitação: ${optimalRoute.friendsOrder.join(' → ')}`);
+
+        let totalCost = 0;
+        let currentPos = [...this.gameState.barbiePos];
+
+        // Executar a rota ótima
+        for (let friendIndex = 0; friendIndex < optimalRoute.friendsOrder.length; friendIndex++) {
+            if (!this.gameState.isRunning) break;
+
+            const friendName = optimalRoute.friendsOrder[friendIndex];
+            const friend = this.gameState.getFriend(friendName);
             
-            if (availableFriends.length === 0) {
-                this.uiManager.log('❌ Não há mais amigos para visitar!');
-                break;
+            this.uiManager.log(`🎯 Indo visitar ${friendName} na posição [${friend.pos}]`);
+            
+            // Encontrar caminho até o amigo
+            const pathToFriend = this.aStar.findPath(currentPos, friend.pos);
+            
+            if (!pathToFriend) {
+                this.uiManager.log(`❌ Não foi possível encontrar caminho para ${friendName}!`);
+                continue;
             }
-            
-            // Calcular distâncias e escolher o mais próximo
-            const { friend: closestFriend, path: shortestPath } = this.aStar.findClosestFriend(
-                this.gameState.barbiePos, 
-                availableFriends
-            );
-            
-            if (!closestFriend) {
-                this.uiManager.log('❌ Não foi possível encontrar caminho para nenhum amigo!');
-                break;
-            }
-            
-            this.uiManager.log(`🎯 Indo visitar ${closestFriend.name} na posição [${closestFriend.pos}]`);
-            this.uiManager.log(`📍 Caminho encontrado com custo: ${shortestPath.cost} minutos`);
+
+            this.uiManager.log(`📍 Caminho encontrado com custo: ${pathToFriend.cost} minutos`);
             
             // Mover ao longo do caminho
-            for (let i = 1; i < shortestPath.path.length; i++) {
+            for (let i = 1; i < pathToFriend.path.length; i++) {
                 if (!this.gameState.isRunning) break;
                 
-                const prevPos = [...this.gameState.barbiePos];
-                this.gameState.moveBarbieToPosition(shortestPath.path[i]);
+                const prevPos = [...currentPos];
+                currentPos = [...pathToFriend.path[i]];
+                this.gameState.moveBarbieToPosition(currentPos);
                 
                 // Marcar célula anterior como visitada
                 this.gameState.addVisitedCell(prevPos);
                 
-                const terrain = this.gameState.getTerrainAt(this.gameState.barbiePos);
+                const terrain = this.gameState.getTerrainAt(currentPos);
                 const stepCost = this.gameState.getTerrainCost(terrain);
                 totalCost += stepCost;
                 this.gameState.currentCost = totalCost;
                 
-                this.uiManager.log(`👣 Movendo para [${this.gameState.barbiePos[0]}, ${this.gameState.barbiePos[1]}] - Terreno: ${terrain} (${stepCost} min)`);
+                this.uiManager.log(`👣 [${currentPos[0]}, ${currentPos[1]}] - ${terrain} (+${stepCost} min, total: ${totalCost} min)`);
                 
                 this.uiManager.updateDisplay();
                 await this.sleep(this.gameState.gameSpeed);
             }
             
             // Tentar convencer o amigo
-            this.gameState.visitFriend(closestFriend.name);
-            const willAccept = this.gameState.willFriendAccept(closestFriend.name);
+            this.gameState.visitFriend(friendName);
+            const willAccept = this.gameState.willFriendAccept(friendName);
             
             if (willAccept) {
-                this.gameState.convinceFriend(closestFriend.name);
-                this.uiManager.log(`✅ ${closestFriend.name} aceitou participar do concurso!`);
-                this.uiManager.animateFriendResponse(closestFriend.name, true);
+                this.gameState.convinceFriend(friendName);
+                this.uiManager.log(`✅ ${friendName} aceitou participar do concurso! (${this.gameState.convincedFriends.length}/3)`);
+                this.uiManager.animateFriendResponse(friendName, true);
             } else {
-                this.uiManager.log(`❌ ${closestFriend.name} recusou o convite.`);
-                this.uiManager.animateFriendResponse(closestFriend.name, false);
+                this.uiManager.log(`❌ ${friendName} recusou o convite.`);
+                this.uiManager.animateFriendResponse(friendName, false);
             }
             
             this.uiManager.updateFriendsStatus();
             this.uiManager.updateDisplay();
-            await this.sleep(this.gameState.gameSpeed * 3); // Pausa mais longa para mostrar a resposta
+            await this.sleep(this.gameState.gameSpeed * 3);
+
+            // Verificar se já conseguiu 3 amigos
+            if (this.gameState.convincedFriends.length >= 3) {
+                this.uiManager.log('🎉 Conseguiu convencer 3 amigos! Interrompendo busca...');
+                break;
+            }
         }
         
-        // Retornar para casa se conseguiu convencer 3 pessoas
-        if (this.gameState.isGameComplete()) {
-            await this.returnHome(totalCost);
+        // Retornar para casa
+        if (this.gameState.convincedFriends.length >= 3) {
+            await this.returnHome(totalCost, currentPos);
         } else {
             this.uiManager.log(`❌ Missão falhou! Apenas ${this.gameState.convincedFriends.length} pessoas foram convencidas.`);
-            this.uiManager.setGameStatus('Missão falhou');
+            this.uiManager.setGameStatus(`Missão falhou - ${this.gameState.convincedFriends.length}/3 convencidos`);
         }
         
         this.gameState.isRunning = false;
         this.uiManager.enableStartButton();
     }
 
-    async returnHome(totalCost) {
-        this.uiManager.log('🎉 Missão cumprida! Retornando para casa...');
-        const returnPath = this.aStar.findPath(this.gameState.barbiePos, Config.START_POS);
+    // Encontrar a rota ótima usando A* com análise de permutações
+    findOptimalRoute() {
+        const allFriends = [...this.gameState.friends];
+        const startPos = [...this.gameState.barbiePos];
+        
+        // Calcular todas as permutações possíveis de visitação
+        const permutations = this.generatePermutations(allFriends);
+        let bestRoute = null;
+        let minCost = Infinity;
+
+        this.uiManager.log(`🔍 Analisando ${permutations.length} rotas possíveis...`);
+
+        for (const permutation of permutations) {
+            const routeCost = this.calculateRouteCost(startPos, permutation);
+            
+            if (routeCost !== null && routeCost < minCost) {
+                minCost = routeCost;
+                bestRoute = {
+                    friendsOrder: permutation.map(f => f.name),
+                    totalCost: routeCost,
+                    friends: permutation
+                };
+            }
+        }
+
+        if (bestRoute) {
+            this.uiManager.log(`✨ Melhor rota encontrada com custo ${bestRoute.totalCost} minutos`);
+        }
+
+        return bestRoute;
+    }
+
+    // Gerar todas as permutações possíveis de amigos
+    generatePermutations(friends) {
+        if (friends.length <= 1) return [friends];
+        
+        const result = [];
+        for (let i = 0; i < friends.length; i++) {
+            const current = friends[i];
+            const remaining = friends.slice(0, i).concat(friends.slice(i + 1));
+            const permutations = this.generatePermutations(remaining);
+            
+            for (const perm of permutations) {
+                result.push([current, ...perm]);
+            }
+        }
+        
+        return result;
+    }
+
+    // Calcular o custo total de uma rota específica
+    calculateRouteCost(startPos, friendsSequence) {
+        let currentPos = [...startPos];
+        let totalCost = 0;
+        
+        // Custo para visitar todos os amigos na sequência
+        for (const friend of friendsSequence) {
+            const pathResult = this.aStar.findPath(currentPos, friend.pos);
+            if (!pathResult) {
+                return null; // Rota impossível
+            }
+            
+            totalCost += pathResult.cost;
+            currentPos = [...friend.pos];
+        }
+        
+        // Custo para retornar para casa
+        const returnPath = this.aStar.findPath(currentPos, Config.START_POS);
+        if (!returnPath) {
+            return null; // Impossível retornar
+        }
+        
+        totalCost += returnPath.cost;
+        
+        return totalCost;
+    }
+
+    async returnHome(totalCost, currentPos) {
+        this.uiManager.log('🎉 Missão cumprida! Calculando rota de retorno...');
+        const returnPath = this.aStar.findPath(currentPos, Config.START_POS);
         
         if (returnPath) {
+            this.uiManager.log(`🏠 Retornando para casa - Custo do retorno: ${returnPath.cost} minutos`);
+            
             for (let i = 1; i < returnPath.path.length; i++) {
                 if (!this.gameState.isRunning) break;
                 
-                const prevPos = [...this.gameState.barbiePos];
-                this.gameState.moveBarbieToPosition(returnPath.path[i]);
+                const prevPos = [...currentPos];
+                currentPos = [...returnPath.path[i]];
+                this.gameState.moveBarbieToPosition(currentPos);
                 
                 // Marcar célula anterior como visitada
                 this.gameState.addVisitedCell(prevPos);
                 
-                const terrain = this.gameState.getTerrainAt(this.gameState.barbiePos);
+                const terrain = this.gameState.getTerrainAt(currentPos);
                 const stepCost = this.gameState.getTerrainCost(terrain);
                 totalCost += stepCost;
                 this.gameState.currentCost = totalCost;
                 
-                this.uiManager.log(`🏠 Retornando para casa: [${this.gameState.barbiePos[0]}, ${this.gameState.barbiePos[1]}] - ${terrain} (${stepCost} min)`);
+                this.uiManager.log(`🏠 Retornando: [${currentPos[0]}, ${currentPos[1]}] - ${terrain} (+${stepCost} min)`);
                 
                 this.uiManager.updateDisplay();
                 await this.sleep(this.gameState.gameSpeed);
             }
             
-            this.uiManager.log(`🏠 Barbie chegou em casa! Custo total: ${totalCost} minutos`);
-            this.uiManager.setGameStatus(`Missão concluída! Custo: ${totalCost} min`);
+            this.uiManager.log(`🏠 Barbie chegou em casa! Custo total final: ${totalCost} minutos`);
+            this.uiManager.log(`🏆 MISSÃO CONCLUÍDA COM SUCESSO! ${this.gameState.convincedFriends.length} amigos convencidos`);
+            this.uiManager.setGameStatus(`✅ Concluído! ${totalCost} min - ${this.gameState.convincedFriends.length}/3 amigos`);
         } else {
             this.uiManager.log('❌ Não foi possível encontrar caminho de volta para casa!');
+            this.uiManager.setGameStatus('❌ Erro no retorno');
         }
     }
 

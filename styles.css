@@ -97,7 +97,7 @@ button:disabled {
 }
 
 .coord-number {
-    width: 16px;
+    width: 18px;
     height: 16px;
     display: flex;
     align-items: center;
@@ -106,7 +106,7 @@ button:disabled {
 }
 
 .coord-number-left {
-    height: 16px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -119,25 +119,32 @@ button:disabled {
     line-height: 0;
     margin-left: 25px;
     margin-top: 20px;
-    border: 1px solid #ddd;
+    border: 2px solid #333;
     background: #f8f9fa;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
 }
 
 .cell {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     display: inline-block;
-    border: none;
+    border: 0.5px solid rgba(0,0,0,0.1);
     position: relative;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     box-sizing: border-box;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
 }
 
 .cell:hover {
-    transform: scale(1.3);
-    z-index: 10;
-    border: 2px solid #000;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    transform: scale(1.5);
+    z-index: 100;
+    border: 2px solid #000 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    border-radius: 3px;
 }
 
 .info-panel {
@@ -174,13 +181,20 @@ button:disabled {
     display: flex;
     align-items: center;
     gap: 8px;
+    padding: 5px;
+    background: white;
+    border-radius: 5px;
 }
 
 .legend-color {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border-radius: 3px;
     border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
 }
 
 .log {
@@ -188,7 +202,7 @@ button:disabled {
     border: 2px solid #dee2e6;
     border-radius: 8px;
     padding: 15px;
-    height: 200px;
+    height: 250px;
     overflow-y: auto;
     font-family: 'Courier New', monospace;
     font-size: 12px;
@@ -204,16 +218,18 @@ button:disabled {
 
 .friend-card {
     background: white;
-    padding: 10px;
+    padding: 12px;
     border-radius: 8px;
     text-align: center;
     border: 2px solid #ddd;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .friend-card.convinced {
     border-color: #28a745;
     background: #d4edda;
+    transform: scale(1.05);
 }
 
 .friend-card.rejected {
@@ -226,85 +242,194 @@ button:disabled {
     background: #fff3cd;
 }
 
-/* Cores dos terrenos */
-.asfalto { background-color: #2c2c2c; }
-.grama { background-color: #00ff00; }
-.terra { background-color: #9d4100; }
-.paralelepipedo { background-color: #A9A9A9; }
-.edificio { background-color: #9b958f; }
+/* Cores dos terrenos - mais vibrantes e com ícones */
+.asfalto { 
+    background-color: #2c2c2c; 
+    color: white;
+}
+
+.grama { 
+    background-color: #228B22; 
+    color: white;
+}
+
+.terra { 
+    background-color: #8B4513; 
+    color: white;
+}
+
+.paralelepipedo { 
+    background-color: #696969; 
+    color: white;
+}
+
+.edificio { 
+    background-color: #4A4A4A; 
+    color: white;
+    border: 1px solid #000 !important;
+}
+
 .barbie { 
-    background-color: #ffffff; 
+    background: radial-gradient(circle, #FF1493, #FF69B4); 
     animation: pulse 1s infinite;
-    box-shadow: 0 0 10px #FF1493;
+    box-shadow: 0 0 15px #FF1493;
+    color: white;
+    font-size: 14px;
 }
+
 .friend { 
-    background-color: #FFD700; 
-    border: 2px solid #FFA500 !important;
+    background: radial-gradient(circle, #FFD700, #FFA500); 
+    border: 2px solid #FF8C00 !important;
     animation: glow 2s infinite alternate;
+    color: #8B4513;
+    font-weight: bold;
+    font-size: 14px;
 }
+
 .path { 
     background-color: #00BFFF; 
     animation: pathGlow 0.5s ease-in-out;
 }
-.visited { background-color: #87CEEB; }
+
+.visited { 
+    background: linear-gradient(45deg, #87CEEB, #B0E0E6); 
+    opacity: 0.8;
+}
 
 .friend.convinced-friend { 
-    background-color: #32CD32 !important; 
+    background: radial-gradient(circle, #32CD32, #90EE90) !important; 
     animation: success 1s ease-in-out;
-}
-.friend.rejected-friend { 
-    background-color: #DC143C !important; 
-    animation: shake 0.5s ease-in-out;
+    color: white;
 }
 
+.friend.rejected-friend { 
+    background: radial-gradient(circle, #DC143C, #FF6B6B) !important; 
+    animation: shake 0.5s ease-in-out;
+    color: white;
+}
+
+/* Animações */
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2); }
+    0%, 100% { 
+        transform: scale(1); 
+        box-shadow: 0 0 15px #FF1493;
+    }
+    50% { 
+        transform: scale(1.3); 
+        box-shadow: 0 0 25px #FF1493;
+    }
 }
 
 @keyframes glow {
-    0% { box-shadow: 0 0 5px #FFD700; }
-    100% { box-shadow: 0 0 15px #FFA500; }
+    0% { 
+        box-shadow: 0 0 8px #FFD700;
+        transform: scale(1);
+    }
+    100% { 
+        box-shadow: 0 0 20px #FFA500;
+        transform: scale(1.1);
+    }
 }
 
 @keyframes pathGlow {
-    0% { background-color: #00BFFF; transform: scale(1); }
-    50% { background-color: #87CEEB; transform: scale(1.1); }
-    100% { background-color: #00BFFF; transform: scale(1); }
+    0% { 
+        background-color: #00BFFF; 
+        transform: scale(1); 
+    }
+    50% { 
+        background-color: #87CEEB; 
+        transform: scale(1.2); 
+    }
+    100% { 
+        background-color: #00BFFF; 
+        transform: scale(1); 
+    }
 }
 
 @keyframes success {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.3); background-color: #90EE90; }
-    100% { transform: scale(1); }
+    0% { 
+        transform: scale(1); 
+    }
+    25% { 
+        transform: scale(1.4) rotate(5deg); 
+    }
+    50% { 
+        transform: scale(1.6) rotate(-5deg); 
+        background: radial-gradient(circle, #90EE90, #98FB98) !important;
+    }
+    75% { 
+        transform: scale(1.4) rotate(5deg); 
+    }
+    100% { 
+        transform: scale(1); 
+    }
 }
 
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-2px); }
-    75% { transform: translateX(2px); }
+    0%, 100% { transform: translateX(0) scale(1); }
+    10% { transform: translateX(-3px) scale(1.1); }
+    20% { transform: translateX(3px) scale(1.1); }
+    30% { transform: translateX(-3px) scale(1.1); }
+    40% { transform: translateX(3px) scale(1.1); }
+    50% { transform: translateX(-2px) scale(1.05); }
+    60% { transform: translateX(2px) scale(1.05); }
+    70% { transform: translateX(-1px) scale(1.02); }
+    80% { transform: translateX(1px) scale(1.02); }
+    90% { transform: translateX(0) scale(1.01); }
 }
 
 .cell-info {
     position: absolute;
-    top: -25px;
+    top: -30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.9);
     color: white;
-    padding: 2px 5px;
-    border-radius: 3px;
-    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 11px;
     white-space: nowrap;
     z-index: 1000;
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
+    border: 1px solid #333;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .cell:hover .cell-info {
     opacity: 1;
 }
+
+/* Atualizar cores da legenda */
+.legend-color.asfalto { background-color: #2c2c2c; }
+.legend-color.asfalto::after { content: '🛣️'; }
+
+.legend-color.grama { background-color: #228B22; }
+.legend-color.grama::after { content: '🌱'; }
+
+.legend-color.terra { background-color: #8B4513; }
+.legend-color.terra::after { content: '🟤'; }
+
+.legend-color.paralelepipedo { background-color: #696969; }
+.legend-color.paralelepipedo::after { content: '🧱'; }
+
+.legend-color.edificio { background-color: #4A4A4A; }
+.legend-color.edificio::after { content: '🏢'; }
+
+.legend-color.barbie { 
+    background: radial-gradient(circle, #FF1493, #FF69B4); 
+    animation: pulse 1s infinite;
+}
+.legend-color.barbie::after { content: '👑'; }
+
+.legend-color.friend { 
+    background: radial-gradient(circle, #FFD700, #FFA500); 
+}
+.legend-color.friend::after { content: '👤'; }
+
+.legend-color.path { background-color: #00BFFF; }
+.legend-color.path::after { content: '👣'; }
 
 @media (max-width: 768px) {
     .container {
@@ -317,16 +442,18 @@ button:disabled {
     }
     
     .cell {
-        width: 12px;
-        height: 12px;
+        width: 14px;
+        height: 14px;
+        font-size: 10px;
     }
     
     .coord-number {
-        min-width: 16px;
+        width: 14px;
+        height: 14px;
     }
     
     .coord-number-left {
-        height: 16px;
+        height: 14px;
     }
     
     .map-wrapper {
@@ -335,5 +462,14 @@ button:disabled {
     
     .coordinates {
         font-size: 7px;
+    }
+    
+    h1 {
+        font-size: 2em;
+    }
+    
+    button {
+        padding: 10px 20px;
+        font-size: 14px;
     }
 }
