@@ -30,6 +30,14 @@ class Game {
         
         this.uiManager.enableStartButton();
         this.uiManager.setGameStatus('Pronto para iniciar');
+
+        // Verificar se todos os amigos são alcançáveis
+        const unreachableFriends = this.checkUnreachableFriends();
+        if (unreachableFriends.length > 0) {
+            this.uiManager.log('⚠️ Aviso: Alguns amigos estão em posições inacessíveis. Reposicionando...');
+            MapGenerator.validateFriendPositions(this.gameState.map);
+            this.uiManager.updateDisplay();
+        }
     }
 
     async startSearch() {
@@ -299,6 +307,17 @@ class Game {
         } else {
             this.uiManager.showAlert('Opção inválida!');
         }
+    }
+
+    checkUnreachableFriends() {
+        const unreachable = [];
+        for (const friend of Config.FRIENDS) {
+            const path = this.aStar.findPath(this.gameState.barbiePos, friend.pos);
+            if (!path) {
+                unreachable.push(friend.name);
+            }
+        }
+        return unreachable;
     }
 
     sleep(ms) {

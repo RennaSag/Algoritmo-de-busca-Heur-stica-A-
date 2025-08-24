@@ -1,6 +1,6 @@
 class Config {
     static GRID_SIZE = 42;
-    static START_POS = [23, 19];
+    static START_POS = [22, 18];
     
     static TERRAIN_COSTS = {
         asfalto: 1,
@@ -11,12 +11,12 @@ class Config {
     };
 
     static FRIENDS = [
-        { name: 'Suzy', pos: [5, 8] },
-        { name: 'Polly', pos: [35, 12] },
-        { name: 'Mary', pos: [8, 30] },
-        { name: 'Carly', pos: [38, 35] },
-        { name: 'Ken', pos: [15, 5] },
-        { name: 'Brandon', pos: [25, 38] }
+        { name: 'Suzy', pos: [4, 12] },
+        { name: 'Polly', pos: [9, 8] },
+        { name: 'Mary', pos: [5, 34] },
+        { name: 'Carly', pos: [36, 36] },
+        { name: 'Ken', pos: [35, 14] },
+        { name: 'Brandon', pos: [23, 37] }
     ];
 
     static SPEEDS = {

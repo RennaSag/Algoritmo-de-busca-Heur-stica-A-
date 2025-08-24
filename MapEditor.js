@@ -2,6 +2,8 @@ class MapEditor {
     constructor() {
         this.isEditingMap = false;
         this.customMap = null;
+        this.isMouseDown = false;  // Novo: controle do mouse
+        this.selectedFriend = null;
     }
 
     openMapEditor() {
@@ -20,27 +22,69 @@ class MapEditor {
         const currentMap = this.customMap || MapGenerator.generateMap();
         let html = '';
         
+        // Adicionar eventos de mouse no container
+        html = '<div onmousedown="mapEditor.startPainting(event)" onmouseup="mapEditor.stopPainting()" onmouseleave="mapEditor.stopPainting()">';
+        
         for (let i = 0; i < Config.GRID_SIZE; i++) {
             for (let j = 0; j < Config.GRID_SIZE; j++) {
                 const terrain = currentMap[i][j];
                 let cellContent = '';
                 
-                // Mostrar posições especiais
+                // Mostrar posições especiais com ícones corretos
                 if (i === Config.START_POS[0] && j === Config.START_POS[1]) {
-                    cellContent = '🏠';
+                    cellContent = '🏰'; // Castelo para casa da Barbie
                 } else {
                     const friend = Config.FRIENDS.find(f => f.pos[0] === i && f.pos[1] === j);
                     if (friend) {
-                        cellContent = friend.name[0];
+                        html += `<div class="cell friend" 
+                                     draggable="true"
+                                     onmousedown="mapEditor.startDragFriend('${friend.name}')"
+                                     ondragend="mapEditor.dropFriend(event, ${i}, ${j})"
+                                     title="${friend.name} [${i},${j}]">👤</div>`;
+                        continue; // Pular o restante do loop para não adicionar outra célula
+                    } else {
+                        // Adicionar ícones para cada tipo de terreno
+                        switch(terrain) {
+                            case 'asfalto': cellContent = '🛣️'; break;
+                            case 'terra': cellContent = '🟫'; break;
+                            case 'grama': cellContent = '🌱'; break;
+                            case 'paralelepipedo': cellContent = '🟨'; break;
+                            case 'edificio': cellContent = '🏢'; break;
+                        }
                     }
                 }
                 
-                html += `<div class="cell ${terrain}" onclick="mapEditor.paintCell(${i}, ${j})" style="cursor: pointer; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.8);" title="[${i},${j}] - ${terrain}">${cellContent}</div>`;
+                html += `<div class="cell ${terrain}" 
+                             onmouseover="mapEditor.paintCellIfDragging(${i}, ${j})"
+                             onmousedown="mapEditor.paintCell(${i}, ${j})"
+                             style="cursor: pointer; font-size: 14px; display: inline-flex; 
+                                    align-items: center; justify-content: center;"
+                             title="[${i},${j}] - ${terrain}">${cellContent}</div>`;
             }
             html += '<br>';
         }
         
+        html += '</div>';
         editorMapElement.innerHTML = html;
+
+        // Prevenir arrasto de texto/imagens
+        editorMapElement.addEventListener('dragstart', (e) => e.preventDefault());
+    }
+
+    startPainting(event) {
+        this.isMouseDown = true;
+        // Prevenir seleção de texto
+        event.preventDefault();
+    }
+
+    stopPainting() {
+        this.isMouseDown = false;
+    }
+
+    paintCellIfDragging(i, j) {
+        if (this.isMouseDown) {
+            this.paintCell(i, j);
+        }
     }
 
     paintCell(i, j) {
@@ -48,28 +92,25 @@ class MapEditor {
         
         const selectedTerrain = document.getElementById('terrainSelector').value;
         
-        // Não permitir pintar sobre casa da Barbie ou amigos
+        // Verificações de posição válida
         if (i === Config.START_POS[0] && j === Config.START_POS[1]) {
-            alert('Não é possível modificar a Casa da Barbie!');
-            return;
+            return; // Silenciosamente ignora a casa da Barbie durante o arrasto
         }
         
         if (Config.FRIENDS.some(f => f.pos[0] === i && f.pos[1] === j)) {
-            alert('Não é possível modificar a posição de um amigo!');
-            return;
+            return; // Silenciosamente ignora posições de amigos durante o arrasto
         }
         
         if (!this.customMap) {
-            // Clonar o mapa atual ou gerar um novo
-            if (window.game && window.game.gameState.map.length > 0) {
-                this.customMap = window.game.gameState.map.map(row => [...row]);
-            } else {
-                this.customMap = MapGenerator.generateMap();
-            }
+            this.customMap = window.game && window.game.gameState.map.length > 0
+                ? window.game.gameState.map.map(row => [...row])
+                : MapGenerator.generateMap();
         }
         
-        this.customMap[i][j] = selectedTerrain;
-        this.renderEditorMap();
+        if (this.customMap[i][j] !== selectedTerrain) {
+            this.customMap[i][j] = selectedTerrain;
+            this.renderEditorMap();
+        }
     }
 
     saveMapConfig() {
@@ -148,6 +189,36 @@ class MapEditor {
         } catch (e) {
             alert('Erro ao importar mapa: ' + e.message);
         }
+    }
+
+    startDragFriend(friendName) {
+        this.selectedFriend = friendName;
+    }
+
+    dropFriend(event, oldI, oldJ) {
+        const rect = event.target.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        // Calcular nova posição baseado no local do drop
+        const cellSize = 20; // Ajuste conforme seu CSS
+        const newI = Math.floor(y / cellSize);
+        const newJ = Math.floor(x / cellSize);
+
+        // Validar nova posição
+        if (newI >= 0 && newI < Config.GRID_SIZE && 
+            newJ >= 0 && newJ < Config.GRID_SIZE) {
+            
+            // Verificar se a nova posição não é um edifício
+            if (this.customMap[newI][newJ] !== 'edificio') {
+                Config.updateFriendPosition(this.selectedFriend, [newI, newJ]);
+                this.renderEditorMap();
+            } else {
+                alert('Não é possível posicionar amigos em edifícios!');
+            }
+        }
+        
+        this.selectedFriend = null;
     }
 
     getCustomMap() {

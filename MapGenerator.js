@@ -106,8 +106,44 @@ class MapGenerator {
         return map;
     }
 
+    static validateFriendPositions(map) {
+        // Verifica se cada amigo está em uma posição válida
+        Config.FRIENDS.forEach(friend => {
+            const [x, y] = friend.pos;
+            
+            // Verifica se está em um edifício
+            if (map[x][y] === 'edificio') {
+                // Encontra a célula válida mais próxima
+                const newPos = this.findNearestValidPosition(map, x, y);
+                friend.pos = newPos;
+            }
+        });
+    }
+
+    static findNearestValidPosition(map, x, y) {
+        const maxDistance = 5; // Procura em um raio de 5 células
+        
+        for (let d = 1; d <= maxDistance; d++) {
+            for (let i = -d; i <= d; i++) {
+                for (let j = -d; j <= d; j++) {
+                    const newX = x + i;
+                    const newY = y + j;
+                    
+                    // Verifica se a posição é válida
+                    if (newX >= 0 && newX < Config.GRID_SIZE &&
+                        newY >= 0 && newY < Config.GRID_SIZE &&
+                        map[newX][newY] !== 'edificio') {
+                        return [newX, newY];
+                    }
+                }
+            }
+        }
+        return [x, y]; // Retorna posição original se não encontrar alternativa
+    }
+
     static generateMazeMap() {
-        const map = Array(Config.GRID_SIZE).fill().map(() => Array(Config.GRID_SIZE).fill('edificio'));
+        const map = Array(Config.GRID_SIZE).fill().map(() => 
+            Array(Config.GRID_SIZE).fill('grama'));
         
         // Criar corredores
         const createPath = (x, y) => {
@@ -119,7 +155,7 @@ class MapGenerator {
                 const nx = x + dx, ny = y + dy;
                 const mx = x + dx/2, my = y + dy/2;
                 
-                if (nx > 0 && nx < Config.GRID_SIZE-1 && ny > 0 && ny < Config.GRID_SIZE-1 && map[nx][ny] === 'edificio') {
+                if (nx > 0 && nx < Config.GRID_SIZE-1 && ny > 0 && ny < Config.GRID_SIZE-1 && map[nx][ny] === 'grama') {
                     map[mx][my] = 'asfalto';
                     createPath(nx, ny);
                 }
@@ -139,6 +175,9 @@ class MapGenerator {
                 }
             }
         }
+        
+        // Adiciona validação após gerar o mapa
+        this.validateFriendPositions(map);
         
         return map;
     }
