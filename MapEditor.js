@@ -2,6 +2,7 @@ class MapEditor {
     constructor() {
         this.isEditingMap = false;
         this.customMap = null;
+        this.isMouseDown = false;  // apenas para pintar células
     }
 
     openMapEditor() {
@@ -20,27 +21,58 @@ class MapEditor {
         const currentMap = this.customMap || MapGenerator.generateMap();
         let html = '';
         
+        html = '<div onmousedown="mapEditor.startPainting(event)" onmouseup="mapEditor.stopPainting()" onmouseleave="mapEditor.stopPainting()">';
+        
         for (let i = 0; i < Config.GRID_SIZE; i++) {
             for (let j = 0; j < Config.GRID_SIZE; j++) {
                 const terrain = currentMap[i][j];
                 let cellContent = '';
                 
-                // Mostrar posições especiais
                 if (i === Config.START_POS[0] && j === Config.START_POS[1]) {
-                    cellContent = '🏠';
+                    cellContent = '🏰';
                 } else {
                     const friend = Config.FRIENDS.find(f => f.pos[0] === i && f.pos[1] === j);
                     if (friend) {
-                        cellContent = friend.name[0];
+                        cellContent = '👤'; // Amigo não arrastável
+                    } else {
+                        switch(terrain) {
+                            case 'asfalto': cellContent = '🛣️'; break;
+                            case 'terra': cellContent = '🟫'; break;
+                            case 'grama': cellContent = '🌱'; break;
+                            case 'paralelepipedo': cellContent = '🟨'; break;
+                            case 'edificio': cellContent = '🏢'; break;
+                        }
                     }
                 }
                 
-                html += `<div class="cell ${terrain}" onclick="mapEditor.paintCell(${i}, ${j})" style="cursor: pointer; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.8);" title="[${i},${j}] - ${terrain}">${cellContent}</div>`;
+                html += `<div class="cell ${terrain}" 
+                             onmouseover="mapEditor.paintCellIfDragging(${i}, ${j})"
+                             onmousedown="mapEditor.paintCell(${i}, ${j})"
+                             style="cursor: pointer; font-size: 14px; display: inline-flex; 
+                                    align-items: center; justify-content: center;"
+                             title="[${i},${j}] - ${terrain}">${cellContent}</div>`;
             }
             html += '<br>';
         }
         
+        html += '</div>';
         editorMapElement.innerHTML = html;
+    }
+
+    startPainting(event) {
+        this.isMouseDown = true;
+        // Prevenir seleção de texto
+        event.preventDefault();
+    }
+
+    stopPainting() {
+        this.isMouseDown = false;
+    }
+
+    paintCellIfDragging(i, j) {
+        if (this.isMouseDown) {
+            this.paintCell(i, j);
+        }
     }
 
     paintCell(i, j) {
@@ -48,28 +80,25 @@ class MapEditor {
         
         const selectedTerrain = document.getElementById('terrainSelector').value;
         
-        // Não permitir pintar sobre casa da Barbie ou amigos
+        // Verificações de posição válida
         if (i === Config.START_POS[0] && j === Config.START_POS[1]) {
-            alert('Não é possível modificar a Casa da Barbie!');
-            return;
+            return; // Silenciosamente ignora a casa da Barbie durante o arrasto
         }
         
         if (Config.FRIENDS.some(f => f.pos[0] === i && f.pos[1] === j)) {
-            alert('Não é possível modificar a posição de um amigo!');
-            return;
+            return; // Silenciosamente ignora posições de amigos durante o arrasto
         }
         
         if (!this.customMap) {
-            // Clonar o mapa atual ou gerar um novo
-            if (window.game && window.game.gameState.map.length > 0) {
-                this.customMap = window.game.gameState.map.map(row => [...row]);
-            } else {
-                this.customMap = MapGenerator.generateMap();
-            }
+            this.customMap = window.game && window.game.gameState.map.length > 0
+                ? window.game.gameState.map.map(row => [...row])
+                : MapGenerator.generateMap();
         }
         
-        this.customMap[i][j] = selectedTerrain;
-        this.renderEditorMap();
+        if (this.customMap[i][j] !== selectedTerrain) {
+            this.customMap[i][j] = selectedTerrain;
+            this.renderEditorMap();
+        }
     }
 
     saveMapConfig() {
